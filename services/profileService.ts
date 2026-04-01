@@ -5,7 +5,7 @@ import type { Database, Tables } from "@/types/database"
 type SupabaseServerClient = Awaited<ReturnType<typeof import("@/lib/supabase").createSupabaseServerClient>>
 
 type ProfileRow = Tables<"profiles">
-type CharityOption = Pick<Tables<"charities">, "id" | "name"> 
+type CharityOption = Pick<Tables<"charities">, "id" | "name" | "description" | "image_url" | "featured">
 
 type ProfileUpdateInput = {
   name: string
@@ -78,7 +78,8 @@ export async function updateProfile(
 export async function getCharityOptions(supabase: SupabaseServerClient): Promise<CharityOption[]> {
   const { data, error } = await supabase
     .from("charities")
-    .select("id, name")
+    .select("id, name, description, image_url, featured")
+    .order("featured", { ascending: false })
     .order("name", { ascending: true })
 
   if (error) {

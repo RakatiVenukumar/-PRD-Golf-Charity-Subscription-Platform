@@ -12,6 +12,9 @@ import { Button } from "@/components/ui/button"
 type CharityOption = {
   id: string
   name: string
+  description: string
+  image_url: string | null
+  featured: boolean
 }
 
 const profileSchema = z.object({
@@ -46,6 +49,8 @@ export function ProfileForm({
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors, isDirty },
   } = useForm<ProfileFormInput, unknown, ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -75,8 +80,12 @@ export function ProfileForm({
     })
   }
 
+  const selectedCharityId = watch("charityId")
+  const charityPercentage = watch("charityPercentage")
+  const charityPercentageValue = Number(charityPercentage ?? defaultCharityPercentage)
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="space-y-2">
         <label htmlFor="name" className="text-sm font-medium text-slate-800">
           Name
@@ -90,41 +99,96 @@ export function ProfileForm({
         {errors.name ? <p className="text-xs text-rose-600">{errors.name.message}</p> : null}
       </div>
 
-      <div className="space-y-2">
-        <label htmlFor="charityId" className="text-sm font-medium text-slate-800">
-          Selected charity
-        </label>
-        <select
-          id="charityId"
-          className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none ring-offset-2 focus:border-slate-400 focus:ring-2 focus:ring-slate-300"
-          {...register("charityId")}
-        >
-          <option value="">No charity selected</option>
-          {charityOptions.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.name}
-            </option>
-          ))}
-        </select>
+      <input type="hidden" {...register("charityId")} />
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium text-slate-800">Choose your charity</label>
+          {selectedCharityId ? (
+            <button
+              type="button"
+              className="text-xs font-medium text-slate-600 underline hover:text-slate-900"
+              onClick={() => setValue("charityId", "", { shouldDirty: true })}
+            >
+              Clear selection
+            </button>
+          ) : null}
+        </div>
+
         {charityOptions.length === 0 ? (
-          <p className="text-xs text-amber-700">No charities available yet. Admin can add charities later.</p>
-        ) : null}
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            No charities available yet. Admin can add charities later.
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {charityOptions.map((option) => {
+              const isActive = selectedCharityId === option.id
+
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setValue("charityId", option.id, { shouldDirty: true })}
+                  className={[
+                    "group relative overflow-hidden rounded-xl border p-3 text-left transition",
+                    isActive
+                      ? "border-emerald-500 bg-emerald-50 shadow-[0_8px_20px_-12px_rgba(16,185,129,0.6)]"
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
+                  ].join(" ")}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex size-10 items-center justify-center rounded-lg bg-slate-900 text-sm font-semibold text-white">
+                      {option.name.slice(0, 1).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate text-sm font-semibold text-slate-900">{option.name}</p>
+                        {option.featured ? (
+                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+                            Featured
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-1 line-clamp-2 text-xs text-slate-600">{option.description}</p>
+                    </div>
+                  </div>
+                  {isActive ? (
+                    <span className="mt-3 inline-flex rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                      Selected
+                    </span>
+                  ) : null}
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {errors.charityId ? <p className="text-xs text-rose-600">{errors.charityId.message}</p> : null}
       </div>
 
-      <div className="space-y-2">
-        <label htmlFor="charityPercentage" className="text-sm font-medium text-slate-800">
-          Charity contribution (%)
-        </label>
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div className="mb-2 flex items-center justify-between">
+          <label htmlFor="charityPercentage" className="text-sm font-medium text-slate-800">
+            Charity contribution
+          </label>
+          <span className="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white">
+            {charityPercentageValue}%
+          </span>
+        </div>
         <input
           id="charityPercentage"
-          type="number"
+          type="range"
           min={10}
           max={100}
           step={1}
-          className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none ring-offset-2 focus:border-slate-400 focus:ring-2 focus:ring-slate-300"
+          className="w-full accent-emerald-600"
           {...register("charityPercentage")}
         />
-        {errors.charityPercentage ? <p className="text-xs text-rose-600">{errors.charityPercentage.message}</p> : null}
+        <div className="mt-2 flex justify-between text-xs text-slate-500">
+          <span>Min 10%</span>
+          <span>Max 100%</span>
+        </div>
+        {errors.charityPercentage ? <p className="mt-2 text-xs text-rose-600">{errors.charityPercentage.message}</p> : null}
       </div>
 
       {serverError ? <p className="text-sm text-rose-600">{serverError}</p> : null}
