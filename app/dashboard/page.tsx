@@ -4,9 +4,11 @@ import { ScoreList } from "@/components/dashboard/score-list"
 import { SectionCard } from "@/components/dashboard/section-card"
 import { ProfileForm } from "@/components/forms/profile-form"
 import { ScoreEntryForm } from "@/components/forms/score-entry-form"
+import { SubscriptionPlans } from "@/components/forms/subscription-plans"
 import { createSupabaseServerClient } from "@/lib/supabase"
 import { getCharityOptions, getOrCreateProfile } from "@/services/profileService"
 import { getLatestScores } from "@/services/scoreService"
+import { getSubscriptionSnapshot } from "@/services/subscriptionService"
 
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient()
@@ -21,6 +23,7 @@ export default async function DashboardPage() {
   const profile = await getOrCreateProfile(supabase, session.user)
   const charityOptions = await getCharityOptions(supabase)
   const latestScores = await getLatestScores(supabase, session.user.id)
+  const subscriptionSnapshot = await getSubscriptionSnapshot(supabase, session.user.id)
 
   return (
     <div className="space-y-6">
@@ -44,16 +47,15 @@ export default async function DashboardPage() {
 
         <SectionCard
           title="Subscription Status"
-          description="Current plan state and renewal details."
+          description="Choose a monthly or yearly plan with mock payment activation."
         >
-          <div className="space-y-2 text-sm text-slate-700">
-            <p>
-              Status: <span className="font-medium capitalize">{profile.subscription_status}</span>
-            </p>
-            <p>
-              Renewal date: <span className="font-medium">{profile.renewal_date ?? "Not set"}</span>
-            </p>
-          </div>
+          <SubscriptionPlans
+            currentStatus={subscriptionSnapshot.profileStatus}
+            renewalDate={subscriptionSnapshot.renewalDate}
+            currentPlan={subscriptionSnapshot.currentPlan}
+            latestPaymentAmount={subscriptionSnapshot.latestPayment?.amount ?? null}
+            latestPaymentStatus={subscriptionSnapshot.latestPayment?.status ?? null}
+          />
         </SectionCard>
       </div>
 
