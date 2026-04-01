@@ -20,6 +20,8 @@ type UserWinnerWithDraw = WinnerRow & {
   draw_date: string
 }
 
+type WinnerStatus = WinnerRow["status"]
+
 export async function getRecentWinners(
   supabase: SupabaseServerClient,
   limit = 100,
@@ -116,6 +118,50 @@ export async function updateWinnerProofUrl(
 
   if (error || !data) {
     throw new Error(error?.message ?? "Unable to update winner proof")
+  }
+
+  return data
+}
+
+export async function updateWinnerStatus(
+  supabase: SupabaseServerClient,
+  winnerId: string,
+  nextStatus: WinnerStatus,
+): Promise<WinnerRow> {
+  const { data: existing, error: existingError } = await supabase
+    .from("winners")
+    .select("*")
+    .eq("id", winnerId)
+    .single()
+
+  if (existingError || !existing) {
+    throw new Error(existingError?.message ?? "Winner record not found")
+  }
+
+  const currentStatus = existing.status
+
+  // Allowed transitions: pending -> approved/rejected, approved -> paid.
+  const isValidTransition =
+    (currentStatus === "pending" && (nextStatus === "approved" || nextStatus === "rejected")) ||
+    (currentStatus === "approved" && nextStatus === "paid")
+
+  if (!isValidTransition) {
+    throw new Error(`Invalid status transition from ${currentStatus} to ${nextStatus}`)
+  }
+
+  if ((nextStatus === "approved" || nextStatus === "paid") && !existing.proof_url) {
+    throw new Error("Cannot approve or pay winner before proof upload")
+  }
+
+  const { data, error } = await supabase
+    .from("winners")
+    .update({ status: nextStatus })
+    .eq("id", winnerId)
+    .select("*")
+    .single()
+
+  if (error || !data) {
+    throw new Error(error?.message ?? "Failed to update winner status")
   }
 
   return data
