@@ -29,6 +29,7 @@ export function ScoreEntryForm() {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [serverError, setServerError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   const today = useMemo(() => getTodayDateString(), [])
 
@@ -47,6 +48,7 @@ export function ScoreEntryForm() {
 
   const onSubmit = (values: ScoreFormValues) => {
     setServerError(null)
+    setSuccessMessage(null)
 
     startTransition(async () => {
       const result = await createScoreAction(values)
@@ -54,6 +56,12 @@ export function ScoreEntryForm() {
       if (!result.success) {
         setServerError(result.error ?? "Unable to add score")
         return
+      }
+
+      if (result.trimmedOldestScore) {
+        setSuccessMessage("Score saved. Your oldest score was removed to keep the latest 5 entries.")
+      } else {
+        setSuccessMessage("Score saved successfully.")
       }
 
       reset({
@@ -96,7 +104,10 @@ export function ScoreEntryForm() {
         {errors.date ? <p className="text-xs text-rose-600">{errors.date.message}</p> : null}
       </div>
 
+      <p className="text-xs text-slate-500">Only your latest 5 scores are retained automatically.</p>
+
       {serverError ? <p className="text-sm text-rose-600">{serverError}</p> : null}
+      {successMessage ? <p className="text-sm text-emerald-700">{successMessage}</p> : null}
 
       <Button type="submit" disabled={isPending}>
         {isPending ? "Saving score..." : "Add score"}

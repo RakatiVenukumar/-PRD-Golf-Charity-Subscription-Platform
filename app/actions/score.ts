@@ -17,6 +17,7 @@ const scoreSchema = z.object({
 
 type ScoreActionResult = {
   success: boolean
+  trimmedOldestScore?: boolean
   error?: string
 }
 
@@ -40,17 +41,17 @@ export async function createScoreAction(
   }
 
   try {
-    await createScore(supabase, user.id, {
+    const result = await createScore(supabase, user.id, {
       score: parsed.data.score,
       date: parsed.data.date,
     })
+
+    revalidatePath("/dashboard")
+    return { success: true, trimmedOldestScore: result.trimmedCount > 0 }
   } catch (error) {
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to create score",
     }
   }
-
-  revalidatePath("/dashboard")
-  return { success: true }
 }
