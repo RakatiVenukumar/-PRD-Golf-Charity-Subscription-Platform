@@ -5,10 +5,12 @@ import { SectionCard } from "@/components/dashboard/section-card"
 import { ProfileForm } from "@/components/forms/profile-form"
 import { ScoreEntryForm } from "@/components/forms/score-entry-form"
 import { SubscriptionPlans } from "@/components/forms/subscription-plans"
+import { WinnerProofUploader } from "@/components/forms/winner-proof-uploader"
 import { createSupabaseServerClient } from "@/lib/supabase"
 import { getCharityOptions, getOrCreateProfile } from "@/services/profileService"
 import { getLatestScores } from "@/services/scoreService"
 import { getSubscriptionSnapshot } from "@/services/subscriptionService"
+import { getUserWinners } from "@/services/winnerService"
 
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient()
@@ -24,6 +26,9 @@ export default async function DashboardPage() {
   const charityOptions = await getCharityOptions(supabase)
   const latestScores = await getLatestScores(supabase, session.user.id)
   const subscriptionSnapshot = await getSubscriptionSnapshot(supabase, session.user.id)
+  const userWinners = await getUserWinners(supabase, session.user.id)
+  const totalWon = userWinners.reduce((sum, winner) => sum + winner.prize_amount, 0)
+  const paidCount = userWinners.filter((winner) => winner.status === "paid").length
 
   return (
     <div className="space-y-6">
@@ -75,7 +80,24 @@ export default async function DashboardPage() {
         </SectionCard>
 
         <SectionCard id="winnings" title="Winnings Summary" description="Total winnings and payout status.">
-          <p className="text-sm text-slate-600">Winnings module will be connected after draw and winner logic.</p>
+          <div className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Total won</p>
+                <p className="mt-1 text-lg font-semibold text-slate-900">${totalWon.toFixed(2)}</p>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Wins</p>
+                <p className="mt-1 text-lg font-semibold text-slate-900">{userWinners.length}</p>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Paid</p>
+                <p className="mt-1 text-lg font-semibold text-emerald-700">{paidCount}</p>
+              </div>
+            </div>
+
+            <WinnerProofUploader userId={session.user.id} winners={userWinners} />
+          </div>
         </SectionCard>
       </div>
     </div>
