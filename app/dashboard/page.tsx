@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation"
 
+import { ScoreList } from "@/components/dashboard/score-list"
 import { SectionCard } from "@/components/dashboard/section-card"
 import { ProfileForm } from "@/components/forms/profile-form"
 import { ScoreEntryForm } from "@/components/forms/score-entry-form"
 import { createSupabaseServerClient } from "@/lib/supabase"
 import { getCharityOptions, getOrCreateProfile } from "@/services/profileService"
+import { getLatestScores } from "@/services/scoreService"
 
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient()
@@ -18,6 +20,7 @@ export default async function DashboardPage() {
 
   const profile = await getOrCreateProfile(supabase, session.user)
   const charityOptions = await getCharityOptions(supabase)
+  const latestScores = await getLatestScores(supabase, session.user.id)
 
   return (
     <div className="space-y-6">
@@ -56,7 +59,13 @@ export default async function DashboardPage() {
 
       <div className="grid gap-6 xl:grid-cols-3">
         <SectionCard id="scores" title="Score Entry" description="Add your latest Stableford score and date.">
-          <ScoreEntryForm />
+          <div className="space-y-6">
+            <ScoreEntryForm />
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Latest 5 scores</h3>
+              <ScoreList scores={latestScores} />
+            </div>
+          </div>
         </SectionCard>
 
         <SectionCard id="charity" title="Draw Participation" description="Track draw eligibility and upcoming draw cycle.">

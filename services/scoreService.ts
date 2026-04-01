@@ -73,3 +73,22 @@ export async function createScore(
     trimmedCount,
   }
 }
+
+export async function getLatestScores(
+  supabase: SupabaseServerClient,
+  userId: string,
+): Promise<ScoreRow[]> {
+  const { data, error } = await supabase
+    .from("scores")
+    .select("*")
+    .eq("user_id", userId)
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(5)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return data ?? []
+}
