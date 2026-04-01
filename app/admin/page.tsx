@@ -1,13 +1,16 @@
 import { AdminCharityManager } from "@/components/admin/admin-charity-manager"
+import { AdminDrawManager } from "@/components/admin/admin-draw-manager"
 import { AdminUserTable } from "@/components/admin/admin-user-table"
 import { createSupabaseServerClient } from "@/lib/supabase"
 import { getAdminUsers } from "@/services/adminUserService"
 import { getCharities } from "@/services/charityService"
+import { getRecentDraws } from "@/services/drawService"
 
 export default async function AdminPage() {
   const supabase = await createSupabaseServerClient()
   const users = await getAdminUsers(supabase)
   const charities = await getCharities(supabase)
+  const draws = await getRecentDraws(supabase)
   const activeUsers = users.filter((user) => user.subscription_status === "active").length
   const featuredCharities = charities.filter((charity) => charity.featured).length
 
@@ -48,6 +51,14 @@ export default async function AdminPage() {
           <p className="text-sm text-slate-600">Create, update, and remove charity records shown across the platform.</p>
         </div>
         <AdminCharityManager charities={charities} />
+      </article>
+
+      <article className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">Draw Management</h2>
+          <p className="text-sm text-slate-600">Create drafts, run simulations, execute prize distribution, and publish monthly draws.</p>
+        </div>
+        <AdminDrawManager draws={draws} />
       </article>
     </section>
   )

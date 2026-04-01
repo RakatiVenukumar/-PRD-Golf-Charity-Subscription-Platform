@@ -25,6 +25,8 @@ type PrizeDistributionResult = {
   winnersCreated: number
 }
 
+type PrizeBreakdown = Omit<PrizeDistributionResult, "drawId" | "winnersCreated">
+
 const POOL_SPLIT = {
   tier5: 0.4,
   tier4: 0.35,
@@ -70,6 +72,44 @@ async function getActiveSubscriberCount(
   return count ?? 0
 }
 
+function calculatePrizeBreakdown(
+  activeSubscribers: number,
+  matchResult: Awaited<ReturnType<typeof calculateDrawMatches>>,
+): PrizeBreakdown {
+  const totalPool = toMoney(
+    activeSubscribers * DEFAULT_SUBSCRIPTION_POOL_VALUE * POOL_PERCENTAGE_PER_SUBSCRIPTION,
+  )
+
+  const tier5Pool = toMoney(totalPool * POOL_SPLIT.tier5)
+  const tier4Pool = toMoney(totalPool * POOL_SPLIT.tier4)
+  const tier3Pool = toMoney(totalPool * POOL_SPLIT.tier3)
+
+  const tier5Winners = matchResult.tier5.length
+  const tier4Winners = matchResult.tier4.length
+  const tier3Winners = matchResult.tier3.length
+
+  const tier5PrizePerWinner = tier5Winners > 0 ? toMoney(tier5Pool / tier5Winners) : 0
+  const tier4PrizePerWinner = tier4Winners > 0 ? toMoney(tier4Pool / tier4Winners) : 0
+  const tier3PrizePerWinner = tier3Winners > 0 ? toMoney(tier3Pool / tier3Winners) : 0
+
+  const jackpotRolledOver = tier5Winners === 0
+
+  return {
+    activeSubscribers,
+    totalPool,
+    tier5Pool,
+    tier4Pool,
+    tier3Pool,
+    tier5Winners,
+    tier4Winners,
+    tier3Winners,
+    tier5PrizePerWinner,
+    tier4PrizePerWinner,
+    tier3PrizePerWinner,
+    jackpotRolledOver,
+  }
+}
+
 async function clearExistingWinners(
   supabase: SupabaseServerClient,
   drawId: string,
@@ -103,45 +143,28 @@ export async function distributeDrawPrizes(
   const draw = await getDrawById(supabase, drawId)
   const matchResult = await calculateDrawMatches(supabase, drawId)
   const activeSubscribers = await getActiveSubscriberCount(supabase)
-
-  const totalPool = toMoney(
-    activeSubscribers * DEFAULT_SUBSCRIPTION_POOL_VALUE * POOL_PERCENTAGE_PER_SUBSCRIPTION,
-  )
-
-  const tier5Pool = toMoney(totalPool * POOL_SPLIT.tier5)
-  const tier4Pool = toMoney(totalPool * POOL_SPLIT.tier4)
-  const tier3Pool = toMoney(totalPool * POOL_SPLIT.tier3)
-
-  const tier5Winners = matchResult.tier5.length
-  const tier4Winners = matchResult.tier4.length
-  const tier3Winners = matchResult.tier3.length
-
-  const tier5PrizePerWinner = tier5Winners > 0 ? toMoney(tier5Pool / tier5Winners) : 0
-  const tier4PrizePerWinner = tier4Winners > 0 ? toMoney(tier4Pool / tier4Winners) : 0
-  const tier3PrizePerWinner = tier3Winners > 0 ? toMoney(tier3Pool / tier3Winners) : 0
-
-  const jackpotRolledOver = tier5Winners === 0
+  const breakdown = calculatePrizeBreakdown(activeSubscribers, matchResult)
 
   const winnerRows: WinnerInsert[] = [
     ...matchResult.tier5.map((winner) => ({
       user_id: winner.userId,
       draw_id: drawId,
       match_count: 5,
-      prize_amount: tier5PrizePerWinner,
+      prize_amount: breakdown.tier5PrizePerWinner,
       status: "pending" as WinnerStatus,
     })),
     ...matchResult.tier4.map((winner) => ({
       user_id: winner.userId,
       draw_id: drawId,
       match_count: 4,
-      prize_amount: tier4PrizePerWinner,
+      prize_amount: breakdown.tier4PrizePerWinner,
       status: "pending" as WinnerStatus,
     })),
     ...matchResult.tier3.map((winner) => ({
       user_id: winner.userId,
       draw_id: drawId,
       match_count: 3,
-      prize_amount: tier3PrizePerWinner,
+      prize_amount: breakdown.tier3PrizePerWinner,
       status: "pending" as WinnerStatus,
     })),
   ]
@@ -150,7 +173,7 @@ export async function distributeDrawPrizes(
   await insertWinners(supabase, winnerRows)
 
   const drawUpdate: Database["public"]["Tables"]["draws"]["Update"] = {
-    jackpot_rollover: jackpotRolledOver,
+    jackpot_rollover: breakdown.jackpotRolledOver,
   }
 
   const { error: drawUpdateError } = await supabase
@@ -164,18 +187,23 @@ export async function distributeDrawPrizes(
 
   return {
     drawId: draw.id,
-    activeSubscribers,
-    totalPool,
-    tier5Pool,
-    tier4Pool,
-    tier3Pool,
-    tier5Winners,
-    tier4Winners,
-    tier3Winners,
-    tier5PrizePerWinner,
-    tier4PrizePerWinner,
-    tier3PrizePerWinner,
-    jackpotRolledOver,
+    ...breakdown,
     winnersCreated: winnerRows.length,
+  }
+}
+
+export async function simulateDrawPrizes(
+  supabase: SupabaseServerClient,
+  drawId: string,
+): Promise<PrizeDistributionResult> {
+  const draw = await getDrawById(supabase, drawId)
+  const matchResult = await calculateDrawMatches(supabase, drawId)
+  const activeSubscribers = await getActiveSubscriberCount(supabase)
+  const breakdown = calculatePrizeBreakdown(activeSubscribers, matchResult)
+
+  return {
+    drawId: draw.id,
+    ...breakdown,
+    winnersCreated: breakdown.tier3Winners + breakdown.tier4Winners + breakdown.tier5Winners,
   }
 }

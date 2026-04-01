@@ -156,3 +156,25 @@ export async function getRecentDraws(
 
   return data ?? []
 }
+
+export async function publishDraw(
+  supabase: SupabaseServerClient,
+  drawId: string,
+): Promise<DrawRow> {
+  const payload: Database["public"]["Tables"]["draws"]["Update"] = {
+    status: "published",
+  }
+
+  const { data, error } = await supabase
+    .from("draws")
+    .update(payload)
+    .eq("id", drawId)
+    .select("*")
+    .single()
+
+  if (error || !data) {
+    throw new Error(error?.message ?? "Failed to publish draw")
+  }
+
+  return data
+}
