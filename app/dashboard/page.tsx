@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 
 import { SectionCard } from "@/components/dashboard/section-card"
 import { ProfileForm } from "@/components/forms/profile-form"
+import { ScoreEntryForm } from "@/components/forms/score-entry-form"
 import { createSupabaseServerClient } from "@/lib/supabase"
 import { getCharityOptions, getOrCreateProfile } from "@/services/profileService"
 
@@ -55,7 +56,7 @@ export default async function DashboardPage() {
 
       <div className="grid gap-6 xl:grid-cols-3">
         <SectionCard id="scores" title="Score Entry" description="Add your latest Stableford score and date.">
-          <p className="text-sm text-slate-600">Score form will be added in Step 11.</p>
+          <ScoreEntryForm />
         </SectionCard>
 
         <SectionCard id="charity" title="Draw Participation" description="Track draw eligibility and upcoming draw cycle.">
