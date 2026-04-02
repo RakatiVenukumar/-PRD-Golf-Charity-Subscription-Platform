@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
+import type { Variants } from "framer-motion"
 
 type PublicCharity = {
   id: string
@@ -12,7 +13,9 @@ type PublicCharity = {
   image_url?: string | null
 }
 
-const staggerContainer = {
+const EASE_OUT_EXPO: [number, number, number, number] = [0.22, 1, 0.36, 1]
+
+const staggerContainer: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
@@ -23,12 +26,12 @@ const staggerContainer = {
   },
 }
 
-const riseIn = {
+const riseIn: Variants = {
   hidden: { opacity: 0, y: 28 },
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.65, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.65, ease: EASE_OUT_EXPO },
   },
 }
 
@@ -70,7 +73,7 @@ export default function Home() {
         <motion.header
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.5, ease: EASE_OUT_EXPO }}
           className="flex flex-wrap items-center justify-between gap-4"
         >
           <motion.p
@@ -153,7 +156,7 @@ export default function Home() {
           <motion.aside
             initial={{ opacity: 0, x: 24 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.75, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.75, delay: 0.2, ease: EASE_OUT_EXPO }}
             className="rounded-3xl border border-slate-200 bg-white/85 p-6 shadow-[0_24px_60px_-35px_rgba(15,23,42,0.7)] backdrop-blur"
           >
             <p className="font-mono text-xs uppercase tracking-[0.2em] text-slate-500">Impact spotlight</p>

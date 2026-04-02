@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { redirect } from "next/navigation"
 
 import { ScoreManager } from "@/components/dashboard/score-manager"
@@ -82,7 +83,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             charityOptions={charityOptions}
           />
           <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-            Browse all causes and event details in the public directory at <a href="/charities" className="font-medium text-slate-900 underline">/charities</a>.
+            Browse all causes and event details in the public directory at <Link href="/charities" className="font-medium text-slate-900 underline">/charities</Link>.
           </div>
         </SectionCard>
 
