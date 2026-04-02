@@ -1,0 +1,7 @@
+
+Failed to compile.
+
+./app/page.tsx
+144:16  Error: Parsing error: Expected corresponding JSX closing tag for 'motion.a'.
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules

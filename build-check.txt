@@ -1,0 +1,45 @@
+
+> golf-charity-platform@0.1.0 build
+> next build
+
+   ▲ Next.js 15.2.5
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (215kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/15) ...
+   Generating static pages (3/15) 
+   Generating static pages (7/15) 
+   Generating static pages (11/15) 
+ ✓ Generating static pages (15/15)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                    42.3 kB         146 kB
+├ ○ /_not-found                            147 B         101 kB
+├ ƒ /admin                               5.57 kB         157 kB
+├ ƒ /admin/login                         2.04 kB         157 kB
+├ ƒ /api/public/charities                  147 B         101 kB
+├ ƒ /api/v1/public/campaigns               147 B         101 kB
+├ ƒ /api/v1/public/charities               147 B         101 kB
+├ ƒ /api/v1/public/config                  147 B         101 kB
+├ ƒ /charities                             176 B         104 kB
+├ ƒ /charities/[id]                      2.39 kB         157 kB
+├ ƒ /dashboard                           68.2 kB         223 kB
+├ ƒ /login                               2.14 kB         157 kB
+└ ƒ /signup                              2.95 kB         158 kB
++ First Load JS shared by all             101 kB
+  ├ chunks/4bd1b696-a2146464339bcb08.js  53.3 kB
+  ├ chunks/684-d0a40a5ef8db3baa.js       45.3 kB
+  └ other shared chunks (total)             2 kB
+
+
+ƒ Middleware                             85.6 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
