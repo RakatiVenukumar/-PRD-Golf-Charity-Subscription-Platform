@@ -5,6 +5,7 @@ import { z } from "zod"
 
 import { isAdminEmail } from "@/lib/admin"
 import { createSupabaseServerClient } from "@/lib/supabase"
+import { sendWinnerStatusNotification } from "@/services/notificationService"
 import { updateWinnerStatus } from "@/services/winnerService"
 
 const updateWinnerStatusSchema = z.object({
@@ -37,7 +38,22 @@ export async function updateWinnerStatusAction(
   }
 
   try {
-    await updateWinnerStatus(supabase, parsed.data.winnerId, parsed.data.status)
+    const updated = await updateWinnerStatus(supabase, parsed.data.winnerId, parsed.data.status)
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("email, name")
+      .eq("id", updated.user_id)
+      .maybeSingle()
+
+    if (profile?.email) {
+      await sendWinnerStatusNotification(
+        profile.email,
+        profile.name,
+        parsed.data.status,
+        updated.prize_amount,
+      ).catch(() => undefined)
+    }
   } catch (serviceError) {
     return {
       success: false,

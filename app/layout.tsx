@@ -19,8 +19,8 @@ const ibmPlexMono = IBM_Plex_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Golf Charity Subscription Platform",
-  description: "Track scores, win monthly draws, and fund meaningful charity impact.",
+  title: "Digital Heroes | Impact Subscription Platform",
+  description: "Support verified charities through a modern subscription platform with transparent monthly rewards and impact tracking.",
 }
 
 export default function RootLayout({

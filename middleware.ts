@@ -1,14 +1,7 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
-function getAdminEmails() {
-  const value = process.env.ADMIN_EMAILS ?? ""
-
-  return value
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean)
-}
+import { getPostLoginRedirectPath, isAdminEmail } from "@/lib/admin"
 
 function getSupabaseEnv() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -24,6 +17,13 @@ function getSupabaseEnv() {
 }
 
 export async function middleware(request: NextRequest) {
+  const proto = request.headers.get("x-forwarded-proto")
+  if (process.env.NODE_ENV === "production" && proto === "http") {
+    const secureUrl = request.nextUrl.clone()
+    secureUrl.protocol = "https"
+    return NextResponse.redirect(secureUrl)
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -51,8 +51,8 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
-  const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/signup")
-  const isProtectedRoute = pathname.startsWith("/dashboard") || pathname.startsWith("/admin")
+  const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/signup") || pathname.startsWith("/admin/login")
+  const isProtectedRoute = pathname.startsWith("/dashboard")
   const isAdminRoute = pathname.startsWith("/admin")
 
   if (isProtectedRoute && !user) {
@@ -62,23 +62,39 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
+  if (isProtectedRoute && user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("subscription_status, renewal_date")
+      .eq("id", user.id)
+      .maybeSingle()
+
+    const today = new Date().toISOString().split("T")[0]
+
+    if (
+      profile?.subscription_status === "active" &&
+      profile.renewal_date &&
+      profile.renewal_date < today
+    ) {
+      await supabase
+        .from("profiles")
+        .update({ subscription_status: "lapsed" })
+        .eq("id", user.id)
+    }
+  }
+
   if (isAuthRoute && user) {
     const redirectUrl = request.nextUrl.clone()
-    redirectUrl.pathname = "/dashboard"
+    redirectUrl.pathname = getPostLoginRedirectPath(user.email)
     redirectUrl.search = ""
     return NextResponse.redirect(redirectUrl)
   }
 
-  if (isAdminRoute && user) {
-    const adminEmails = getAdminEmails()
-    const currentEmail = user.email?.toLowerCase() ?? ""
-
-    if (!adminEmails.includes(currentEmail)) {
-      const redirectUrl = request.nextUrl.clone()
-      redirectUrl.pathname = "/dashboard"
-      redirectUrl.search = ""
-      return NextResponse.redirect(redirectUrl)
-    }
+  if (isAdminRoute && user && !isAdminEmail(user.email)) {
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = "/dashboard"
+    redirectUrl.search = ""
+    return NextResponse.redirect(redirectUrl)
   }
 
   return response

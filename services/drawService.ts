@@ -19,6 +19,24 @@ function toIsoDateOnly(value: Date) {
   return value.toISOString().split("T")[0]
 }
 
+function getMonthWindow(dateValue: string) {
+  const [yearValue, monthValue] = dateValue.split("-")
+  const year = Number(yearValue)
+  const month = Number(monthValue)
+
+  const start = new Date(Date.UTC(year, month - 1, 1))
+  const next = new Date(Date.UTC(year, month, 1))
+
+  return {
+    start: toIsoDateOnly(start),
+    next: toIsoDateOnly(next),
+  }
+}
+
+function toMoney(value: number) {
+  return Number(value.toFixed(2))
+}
+
 function shuffle<T>(items: T[]): T[] {
   const copy = [...items]
 
@@ -72,17 +90,20 @@ export async function generateAlgorithmicDrawNumbers(
 
   const weightedCandidates = Array.from(frequencyMap.entries())
     .sort((a, b) => b[1] - a[1])
+
+  const mostFrequent = weightedCandidates.slice(0, 2).map(([value]) => value)
+  const leastFrequent = [...weightedCandidates]
+    .sort((a, b) => a[1] - b[1])
+    .slice(0, 2)
     .map(([value]) => value)
 
-  const topWeighted = weightedCandidates.slice(0, DRAW_NUMBERS_COUNT)
-
-  // Mix weighted picks with random pool to avoid repetitive sequences.
   const randomCandidates = pickUniqueNumbersFromPool(
-    buildNumberPool().filter((value) => !topWeighted.includes(value)),
+    buildNumberPool().filter((value) => !mostFrequent.includes(value) && !leastFrequent.includes(value)),
     DRAW_NUMBERS_COUNT,
   )
 
-  const merged = Array.from(new Set([...topWeighted.slice(0, 3), ...randomCandidates.slice(0, 2)]))
+  // Blend both ends of score frequency with one random number.
+  const merged = Array.from(new Set([...mostFrequent, ...leastFrequent, ...randomCandidates.slice(0, 1)]))
 
   if (merged.length < DRAW_NUMBERS_COUNT) {
     const missing = pickUniqueNumbersFromPool(
@@ -100,6 +121,23 @@ export async function createMonthlyDraftDraw(
   input: CreateMonthlyDrawInput,
 ): Promise<DrawRow> {
   const drawDate = input.drawDate ?? toIsoDateOnly(new Date())
+
+  const monthWindow = getMonthWindow(drawDate)
+
+  const { data: existingMonthly, error: existingMonthlyError } = await supabase
+    .from("draws")
+    .select("id")
+    .gte("draw_date", monthWindow.start)
+    .lt("draw_date", monthWindow.next)
+    .maybeSingle()
+
+  if (existingMonthlyError) {
+    throw new Error(existingMonthlyError.message)
+  }
+
+  if (existingMonthly) {
+    throw new Error("A draw already exists for this month")
+  }
 
   const { data: existing, error: existingError } = await supabase
     .from("draws")
@@ -120,11 +158,29 @@ export async function createMonthlyDraftDraw(
       ? await generateAlgorithmicDrawNumbers(supabase)
       : generateRandomDrawNumbers()
 
+  const { data: latestPublished, error: latestPublishedError } = await supabase
+    .from("draws")
+    .select("id, jackpot_rollover, rollover_amount")
+    .eq("status", "published")
+    .order("draw_date", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (latestPublishedError) {
+    throw new Error(latestPublishedError.message)
+  }
+
+  const carryInAmount =
+    latestPublished?.jackpot_rollover && latestPublished.rollover_amount > 0
+      ? toMoney(latestPublished.rollover_amount)
+      : 0
+
   const payload: Database["public"]["Tables"]["draws"]["Insert"] = {
     draw_numbers: drawNumbers,
     draw_date: drawDate,
     status: "draft",
     jackpot_rollover: input.jackpotRollover ?? false,
+    rollover_amount: carryInAmount,
   }
 
   const { data, error } = await supabase

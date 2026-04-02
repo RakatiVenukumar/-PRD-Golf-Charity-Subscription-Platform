@@ -16,6 +16,7 @@ type Draw = {
   draw_date: string
   status: "draft" | "published"
   jackpot_rollover: boolean
+  rollover_amount: number
   created_at: string
 }
 
@@ -25,6 +26,7 @@ type DrawSummary = {
   tier4Winners: number
   tier3Winners: number
   totalPool: number
+  rolloverCarryIn: number
   jackpotRolledOver: boolean
 }
 
@@ -199,6 +201,7 @@ export function AdminDrawManager({ draws }: AdminDrawManagerProps) {
                     <p className="mt-1 text-xs uppercase tracking-wide text-slate-500">
                       {draw.status} {draw.jackpot_rollover ? "| jackpot rollover" : ""}
                     </p>
+                    <p className="text-xs text-slate-600">Carry-in jackpot: ${draw.rollover_amount.toFixed(2)}</p>
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" disabled={isBusyRow} onClick={() => handleSimulate(draw.id)}>
@@ -211,8 +214,9 @@ export function AdminDrawManager({ draws }: AdminDrawManagerProps) {
                 </div>
 
                 {summary ? (
-                  <div className="mt-3 grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700 sm:grid-cols-5">
+                  <div className="mt-3 grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700 sm:grid-cols-6">
                     <p>Pool: ${summary.totalPool.toFixed(2)}</p>
+                    <p>Carry-in: ${summary.rolloverCarryIn.toFixed(2)}</p>
                     <p>5-match: {summary.tier5Winners}</p>
                     <p>4-match: {summary.tier4Winners}</p>
                     <p>3-match: {summary.tier3Winners}</p>

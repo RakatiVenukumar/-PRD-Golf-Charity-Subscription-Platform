@@ -2,6 +2,8 @@ import type { Tables } from "@/types/database"
 
 type ScoreListProps = {
   scores: Tables<"scores">[]
+  editingScoreId?: string | null
+  onEdit?: (scoreId: string) => void
 }
 
 function formatDate(isoDate: string) {
@@ -18,7 +20,7 @@ function formatDate(isoDate: string) {
   }).format(value)
 }
 
-export function ScoreList({ scores }: ScoreListProps) {
+export function ScoreList({ scores, editingScoreId = null, onEdit }: ScoreListProps) {
   if (scores.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
@@ -38,7 +40,23 @@ export function ScoreList({ scores }: ScoreListProps) {
             <p className="text-sm font-medium text-slate-800">{formatDate(entry.date)}</p>
             <p className="text-xs text-slate-500">Entry #{scores.length - index}</p>
           </div>
-          <p className="text-lg font-semibold text-slate-900">{entry.score}</p>
+          <div className="flex items-center gap-3">
+            <p className="text-lg font-semibold text-slate-900">{entry.score}</p>
+            {onEdit ? (
+              <button
+                type="button"
+                onClick={() => onEdit(entry.id)}
+                className={[
+                  "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide",
+                  editingScoreId === entry.id
+                    ? "border-blue-300 bg-blue-50 text-blue-700"
+                    : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50",
+                ].join(" ")}
+              >
+                {editingScoreId === entry.id ? "Editing" : "Edit"}
+              </button>
+            ) : null}
+          </div>
         </li>
       ))}
     </ul>

@@ -127,7 +127,7 @@ export function AdminWinnerTable({ winners }: AdminWinnerTableProps) {
                   </td>
                   <td className="px-3 py-3 text-right">
                     <div className="flex justify-end gap-2">
-                      {winner.status === "pending" ? (
+                      {winner.status === "pending" && winner.proof_url ? (
                         <>
                           <Button size="sm" variant="outline" disabled={rowBusy} onClick={() => handleStatusUpdate(winner.id, "approved")}>
                             Approve
@@ -142,6 +142,10 @@ export function AdminWinnerTable({ winners }: AdminWinnerTableProps) {
                         <Button size="sm" disabled={rowBusy} onClick={() => handleStatusUpdate(winner.id, "paid")}>
                           Mark paid
                         </Button>
+                      ) : null}
+
+                      {winner.status === "pending" && !winner.proof_url ? (
+                        <span className="text-xs text-slate-500">Awaiting proof</span>
                       ) : null}
                     </div>
                   </td>

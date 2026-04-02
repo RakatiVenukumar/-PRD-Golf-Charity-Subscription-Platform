@@ -7,6 +7,7 @@ import { isAdminEmail } from "@/lib/admin"
 import { createSupabaseServerClient } from "@/lib/supabase"
 import { createMonthlyDraftDraw, publishDraw } from "@/services/drawService"
 import { calculateDrawMatches } from "@/services/matchService"
+import { sendDrawResultNotifications } from "@/services/notificationService"
 import { distributeDrawPrizes, simulateDrawPrizes } from "@/services/prizeService"
 
 const createDraftSchema = z.object({
@@ -29,6 +30,7 @@ type DrawActionResult = {
     tier4Winners: number
     tier3Winners: number
     totalPool: number
+    rolloverCarryIn: number
     jackpotRolledOver: boolean
   }
 }
@@ -75,6 +77,7 @@ export async function createDraftDrawAction(
         tier4Winners: 0,
         tier3Winners: 0,
         totalPool: 0,
+        rolloverCarryIn: draw.rollover_amount,
         jackpotRolledOver: draw.jackpot_rollover,
       },
     }
@@ -106,6 +109,7 @@ export async function simulateDrawAction(
         tier4Winners: matchResult.tier4.length,
         tier3Winners: matchResult.tier3.length,
         totalPool: simulation.totalPool,
+        rolloverCarryIn: simulation.rolloverCarryIn,
         jackpotRolledOver: simulation.jackpotRolledOver,
       },
     }
@@ -127,6 +131,7 @@ export async function executeDrawAction(
     const supabase = await getAuthorizedClient()
     const distribution = await distributeDrawPrizes(supabase, parsed.data.drawId)
     await publishDraw(supabase, parsed.data.drawId)
+    await sendDrawResultNotifications(supabase, parsed.data.drawId).catch(() => undefined)
 
     revalidatePath("/admin")
     revalidatePath("/dashboard")
@@ -140,6 +145,7 @@ export async function executeDrawAction(
         tier4Winners: distribution.tier4Winners,
         tier3Winners: distribution.tier3Winners,
         totalPool: distribution.totalPool,
+        rolloverCarryIn: distribution.rolloverCarryIn,
         jackpotRolledOver: distribution.jackpotRolledOver,
       },
     }

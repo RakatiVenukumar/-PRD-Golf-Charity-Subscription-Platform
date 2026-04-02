@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
 import { createSupabaseServerClient } from "@/lib/supabase"
+import { requireActiveSubscription } from "@/services/subscriptionService"
 import { updateWinnerProofUrl } from "@/services/winnerService"
 
 const proofSchema = z.object({
@@ -33,6 +34,15 @@ export async function saveWinnerProofAction(
 
   if (error || !user) {
     return { success: false, error: "Unauthorized" }
+  }
+
+  const subscriptionState = await requireActiveSubscription(supabase, user.id)
+
+  if (!subscriptionState.ok) {
+    return {
+      success: false,
+      error: `Subscription required. Current status: ${subscriptionState.status}.`,
+    }
   }
 
   try {

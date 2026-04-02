@@ -16,6 +16,7 @@ export type Database = {
           description: string
           image_url: string | null
           featured: boolean
+          country_code: string
           created_at: string
         }
         Insert: {
@@ -24,6 +25,7 @@ export type Database = {
           description: string
           image_url?: string | null
           featured?: boolean
+          country_code?: string
           created_at?: string
         }
         Update: {
@@ -32,6 +34,137 @@ export type Database = {
           description?: string
           image_url?: string | null
           featured?: boolean
+          country_code?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "charities_country_code_fkey"
+            columns: ["country_code"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          description: string | null
+          country_code: string
+          starts_at: string | null
+          ends_at: string | null
+          status: Database["public"]["Enums"]["campaign_status"]
+          settings: Json
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          description?: string | null
+          country_code: string
+          starts_at?: string | null
+          ends_at?: string | null
+          status?: Database["public"]["Enums"]["campaign_status"]
+          settings?: Json
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          description?: string | null
+          country_code?: string
+          starts_at?: string | null
+          ends_at?: string | null
+          status?: Database["public"]["Enums"]["campaign_status"]
+          settings?: Json
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_country_code_fkey"
+            columns: ["country_code"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      charity_events: {
+        Row: {
+          id: string
+          charity_id: string
+          title: string
+          description: string | null
+          event_date: string
+          location: string | null
+          image_url: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          charity_id: string
+          title: string
+          description?: string | null
+          event_date: string
+          location?: string | null
+          image_url?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          charity_id?: string
+          title?: string
+          description?: string | null
+          event_date?: string
+          location?: string | null
+          image_url?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "charity_events_charity_id_fkey"
+            columns: ["charity_id"]
+            isOneToOne: false
+            referencedRelation: "charities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      countries: {
+        Row: {
+          code: string
+          name: string
+          currency_code: string
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          code: string
+          name: string
+          currency_code: string
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          code?: string
+          name?: string
+          currency_code?: string
+          is_active?: boolean
           created_at?: string
         }
         Relationships: []
@@ -43,6 +176,7 @@ export type Database = {
           draw_date: string
           status: Database["public"]["Enums"]["draw_status"]
           jackpot_rollover: boolean
+          rollover_amount: number
           created_at: string
         }
         Insert: {
@@ -51,6 +185,7 @@ export type Database = {
           draw_date: string
           status?: Database["public"]["Enums"]["draw_status"]
           jackpot_rollover?: boolean
+          rollover_amount?: number
           created_at?: string
         }
         Update: {
@@ -59,9 +194,148 @@ export type Database = {
           draw_date?: string
           status?: Database["public"]["Enums"]["draw_status"]
           jackpot_rollover?: boolean
+          rollover_amount?: number
           created_at?: string
         }
         Relationships: []
+      }
+      independent_donations: {
+        Row: {
+          id: string
+          user_id: string | null
+          charity_id: string
+          amount: number
+          donor_name: string | null
+          donor_email: string | null
+          message: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          charity_id: string
+          amount: number
+          donor_name?: string | null
+          donor_email?: string | null
+          message?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          charity_id?: string
+          amount?: number
+          donor_name?: string | null
+          donor_email?: string | null
+          message?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "independent_donations_charity_id_fkey"
+            columns: ["charity_id"]
+            isOneToOne: false
+            referencedRelation: "charities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "independent_donations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_members: {
+        Row: {
+          id: string
+          organization_id: string
+          user_id: string
+          role: Database["public"]["Enums"]["organization_member_role"]
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          user_id: string
+          role?: Database["public"]["Enums"]["organization_member_role"]
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          user_id?: string
+          role?: Database["public"]["Enums"]["organization_member_role"]
+          is_active?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          id: string
+          name: string
+          account_type: Database["public"]["Enums"]["account_type"]
+          country_code: string
+          billing_email: string | null
+          external_ref: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          account_type?: Database["public"]["Enums"]["account_type"]
+          country_code: string
+          billing_email?: string | null
+          external_ref?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          account_type?: Database["public"]["Enums"]["account_type"]
+          country_code?: string
+          billing_email?: string | null
+          external_ref?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizations_country_code_fkey"
+            columns: ["country_code"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "organizations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payments: {
         Row: {
@@ -102,6 +376,8 @@ export type Database = {
           name: string
           charity_id: string | null
           charity_percentage: number
+          country_code: string
+          organization_id: string | null
           subscription_status: Database["public"]["Enums"]["subscription_status"]
           renewal_date: string | null
           created_at: string
@@ -112,6 +388,8 @@ export type Database = {
           name: string
           charity_id?: string | null
           charity_percentage?: number
+          country_code?: string
+          organization_id?: string | null
           subscription_status?: Database["public"]["Enums"]["subscription_status"]
           renewal_date?: string | null
           created_at?: string
@@ -122,6 +400,8 @@ export type Database = {
           name?: string
           charity_id?: string | null
           charity_percentage?: number
+          country_code?: string
+          organization_id?: string | null
           subscription_status?: Database["public"]["Enums"]["subscription_status"]
           renewal_date?: string | null
           created_at?: string
@@ -132,6 +412,20 @@ export type Database = {
             columns: ["charity_id"]
             isOneToOne: false
             referencedRelation: "charities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_country_code_fkey"
+            columns: ["country_code"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -259,7 +553,10 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      account_type: "individual" | "team" | "corporate"
+      campaign_status: "draft" | "scheduled" | "active" | "completed" | "archived"
       draw_status: "draft" | "published"
+      organization_member_role: "owner" | "admin" | "member"
       payment_status: "pending" | "paid" | "failed" | "refunded"
       plan_type: "monthly" | "yearly"
       subscription_status: "active" | "inactive" | "lapsed" | "canceled"

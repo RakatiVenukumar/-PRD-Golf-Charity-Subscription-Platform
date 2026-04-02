@@ -12,14 +12,15 @@ type DashboardLayoutProps = {
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
   const supabase = await createSupabaseServerClient()
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
 
-  if (!session) {
+  if (error || !user) {
     redirect("/login")
   }
 
-  const userEmail = session.user.email ?? "Unknown user"
+  const userEmail = user.email ?? "Unknown user"
 
   return (
     <main className="min-h-screen bg-slate-50 p-4 sm:p-6">

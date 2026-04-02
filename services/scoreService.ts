@@ -92,3 +92,29 @@ export async function getLatestScores(
 
   return data ?? []
 }
+
+export async function updateScore(
+  supabase: SupabaseServerClient,
+  userId: string,
+  scoreId: string,
+  input: CreateScoreInput,
+): Promise<ScoreRow> {
+  const payload: Database["public"]["Tables"]["scores"]["Update"] = {
+    score: input.score,
+    date: input.date,
+  }
+
+  const { data, error } = await supabase
+    .from("scores")
+    .update(payload)
+    .eq("id", scoreId)
+    .eq("user_id", userId)
+    .select("*")
+    .single()
+
+  if (error || !data) {
+    throw new Error(error?.message ?? "Failed to update score")
+  }
+
+  return data
+}

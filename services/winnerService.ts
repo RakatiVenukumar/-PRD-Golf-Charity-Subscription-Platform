@@ -108,6 +108,21 @@ export async function updateWinnerProofUrl(
   winnerId: string,
   proofUrl: string,
 ): Promise<WinnerRow> {
+  const { data: existingWinner, error: existingWinnerError } = await supabase
+    .from("winners")
+    .select("id, status")
+    .eq("id", winnerId)
+    .eq("user_id", userId)
+    .single()
+
+  if (existingWinnerError || !existingWinner) {
+    throw new Error(existingWinnerError?.message ?? "Winner record not found")
+  }
+
+  if (existingWinner.status !== "pending" && existingWinner.status !== "rejected") {
+    throw new Error("Proof can only be uploaded for pending or rejected winner submissions")
+  }
+
   const { data, error } = await supabase
     .from("winners")
     .update({ proof_url: proofUrl, status: "pending" })
@@ -149,8 +164,8 @@ export async function updateWinnerStatus(
     throw new Error(`Invalid status transition from ${currentStatus} to ${nextStatus}`)
   }
 
-  if ((nextStatus === "approved" || nextStatus === "paid") && !existing.proof_url) {
-    throw new Error("Cannot approve or pay winner before proof upload")
+  if (!existing.proof_url) {
+    throw new Error("Cannot review or pay winner before proof upload")
   }
 
   const { data, error } = await supabase

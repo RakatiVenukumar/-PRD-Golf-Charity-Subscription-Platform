@@ -12,6 +12,7 @@ type PrizeDistributionResult = {
   drawId: string
   activeSubscribers: number
   totalPool: number
+  rolloverCarryIn: number
   tier5Pool: number
   tier4Pool: number
   tier3Pool: number
@@ -75,14 +76,18 @@ async function getActiveSubscriberCount(
 function calculatePrizeBreakdown(
   activeSubscribers: number,
   matchResult: Awaited<ReturnType<typeof calculateDrawMatches>>,
+  rolloverCarryIn: number,
 ): PrizeBreakdown {
-  const totalPool = toMoney(
+  const basePool = toMoney(
     activeSubscribers * DEFAULT_SUBSCRIPTION_POOL_VALUE * POOL_PERCENTAGE_PER_SUBSCRIPTION,
   )
 
-  const tier5Pool = toMoney(totalPool * POOL_SPLIT.tier5)
-  const tier4Pool = toMoney(totalPool * POOL_SPLIT.tier4)
-  const tier3Pool = toMoney(totalPool * POOL_SPLIT.tier3)
+  const totalPool = toMoney(basePool + rolloverCarryIn)
+
+  const tier4Pool = toMoney(basePool * POOL_SPLIT.tier4)
+  const tier3Pool = toMoney(basePool * POOL_SPLIT.tier3)
+  const tier5BasePool = toMoney(basePool * POOL_SPLIT.tier5)
+  const tier5Pool = toMoney(tier5BasePool + rolloverCarryIn)
 
   const tier5Winners = matchResult.tier5.length
   const tier4Winners = matchResult.tier4.length
@@ -97,6 +102,7 @@ function calculatePrizeBreakdown(
   return {
     activeSubscribers,
     totalPool,
+    rolloverCarryIn,
     tier5Pool,
     tier4Pool,
     tier3Pool,
@@ -143,7 +149,7 @@ export async function distributeDrawPrizes(
   const draw = await getDrawById(supabase, drawId)
   const matchResult = await calculateDrawMatches(supabase, drawId)
   const activeSubscribers = await getActiveSubscriberCount(supabase)
-  const breakdown = calculatePrizeBreakdown(activeSubscribers, matchResult)
+  const breakdown = calculatePrizeBreakdown(activeSubscribers, matchResult, draw.rollover_amount ?? 0)
 
   const winnerRows: WinnerInsert[] = [
     ...matchResult.tier5.map((winner) => ({
@@ -174,6 +180,7 @@ export async function distributeDrawPrizes(
 
   const drawUpdate: Database["public"]["Tables"]["draws"]["Update"] = {
     jackpot_rollover: breakdown.jackpotRolledOver,
+    rollover_amount: breakdown.jackpotRolledOver ? breakdown.tier5Pool : 0,
   }
 
   const { error: drawUpdateError } = await supabase
@@ -199,7 +206,7 @@ export async function simulateDrawPrizes(
   const draw = await getDrawById(supabase, drawId)
   const matchResult = await calculateDrawMatches(supabase, drawId)
   const activeSubscribers = await getActiveSubscriberCount(supabase)
-  const breakdown = calculatePrizeBreakdown(activeSubscribers, matchResult)
+  const breakdown = calculatePrizeBreakdown(activeSubscribers, matchResult, draw.rollover_amount ?? 0)
 
   return {
     drawId: draw.id,

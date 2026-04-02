@@ -11,13 +11,17 @@ import { loginAction } from "@/app/actions/auth"
 import { Button } from "@/components/ui/button"
 
 const loginSchema = z.object({
-  email: z.email("Please enter a valid email"),
+  email: z.string().trim().toLowerCase().email("Please enter a valid email"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 })
 
 type LoginFormValues = z.infer<typeof loginSchema>
 
-export function LoginForm() {
+type LoginFormProps = {
+  initialMessage?: string | null
+}
+
+export function LoginForm({ initialMessage }: LoginFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [serverError, setServerError] = useState<string | null>(null)
@@ -45,8 +49,7 @@ export function LoginForm() {
         return
       }
 
-      router.push("/dashboard")
-      router.refresh()
+      router.replace(result.redirectTo ?? "/dashboard")
     })
   }
 
@@ -56,6 +59,10 @@ export function LoginForm() {
         <h1 className="text-2xl font-semibold text-slate-900">Welcome back</h1>
         <p className="text-sm text-slate-600">Sign in to manage your golf scores and charity impact.</p>
       </div>
+
+      {initialMessage ? (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">{initialMessage}</p>
+      ) : null}
 
       <div className="space-y-2">
         <label className="text-sm font-medium text-slate-800" htmlFor="email">
@@ -95,6 +102,13 @@ export function LoginForm() {
         New here?{" "}
         <Link className="font-medium text-slate-900 underline" href="/signup">
           Create an account
+        </Link>
+      </p>
+
+      <p className="text-center text-xs text-slate-500">
+        Admin access?{" "}
+        <Link className="font-medium text-slate-700 underline" href="/admin/login">
+          Sign in here
         </Link>
       </p>
     </form>

@@ -13,15 +13,16 @@ type AdminLayoutProps = {
 export default async function AdminLayout({ children }: AdminLayoutProps) {
   const supabase = await createSupabaseServerClient()
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
 
-  if (!session) {
-    redirect("/login")
+  if (user && !isAdminEmail(user.email)) {
+    redirect("/dashboard")
   }
 
-  if (!isAdminEmail(session.user.email)) {
-    redirect("/dashboard")
+  if (error || !user) {
+    return <>{children}</>
   }
 
   return (

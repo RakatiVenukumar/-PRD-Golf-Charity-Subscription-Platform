@@ -18,6 +18,7 @@ type WinnerForProof = {
 type WinnerProofUploaderProps = {
   userId: string
   winners: WinnerForProof[]
+  disabled?: boolean
 }
 
 const PROOF_BUCKET = process.env.NEXT_PUBLIC_WINNER_PROOF_BUCKET ?? "winner-proofs"
@@ -29,7 +30,7 @@ function buildProofPath(userId: string, winnerId: string, fileName: string) {
   return `${userId}/${winnerId}-${timestamp}.${safeExtension}`
 }
 
-export function WinnerProofUploader({ userId, winners }: WinnerProofUploaderProps) {
+export function WinnerProofUploader({ userId, winners, disabled = false }: WinnerProofUploaderProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -39,6 +40,11 @@ export function WinnerProofUploader({ userId, winners }: WinnerProofUploaderProp
   const supabase = createSupabaseBrowserClient()
 
   const handleUpload = (winnerId: string, file: File | null) => {
+    if (disabled) {
+      setError("Subscription required. Activate your subscription to upload winner proof.")
+      return
+    }
+
     if (!file) {
       setError("Please select an image file first.")
       return
@@ -95,7 +101,7 @@ export function WinnerProofUploader({ userId, winners }: WinnerProofUploaderProp
       {message ? <p className="text-sm text-emerald-700">{message}</p> : null}
 
       {winners.map((winner) => {
-        const canUpload = winner.status !== "paid"
+        const canUpload = (winner.status === "pending" || winner.status === "rejected") && !disabled
         const isUploading = isPending && activeWinnerId === winner.id
 
         return (
@@ -132,7 +138,13 @@ export function WinnerProofUploader({ userId, winners }: WinnerProofUploaderProp
                 <span className="text-xs text-slate-500">{isUploading ? "Uploading proof..." : "Upload PNG/JPG/WebP screenshot"}</span>
               </div>
             ) : (
-              <p className="mt-3 text-xs text-slate-500">Proof upload closed after payout completion.</p>
+              <p className="mt-3 text-xs text-slate-500">
+                {disabled
+                  ? "Activate subscription to enable proof uploads."
+                  : winner.status === "approved"
+                    ? "Submission approved. Awaiting payout processing."
+                    : "Proof upload closed after payout completion."}
+              </p>
             )}
           </article>
         )

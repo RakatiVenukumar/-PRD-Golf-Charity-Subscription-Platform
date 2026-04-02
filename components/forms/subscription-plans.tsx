@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 
-import { subscribeAction } from "@/app/actions/subscription"
+import { cancelSubscriptionAction, subscribeAction } from "@/app/actions/subscription"
 import { Button } from "@/components/ui/button"
 
 type SubscriptionPlansProps = {
@@ -11,6 +12,7 @@ type SubscriptionPlansProps = {
   currentPlan: "monthly" | "yearly" | null
   latestPaymentAmount: number | null
   latestPaymentStatus: string | null
+  paymentFeedback?: string | null
 }
 
 const planCards = [
@@ -36,7 +38,9 @@ export function SubscriptionPlans({
   currentPlan,
   latestPaymentAmount,
   latestPaymentStatus,
+  paymentFeedback,
 }: SubscriptionPlansProps) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [serverError, setServerError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
@@ -53,7 +57,30 @@ export function SubscriptionPlans({
         return
       }
 
+      if (result.checkoutUrl) {
+        window.location.href = result.checkoutUrl
+        return
+      }
+
       setSuccessMessage(result.message ?? "Subscription activated.")
+      router.refresh()
+    })
+  }
+
+  const handleCancelSubscription = () => {
+    setServerError(null)
+    setSuccessMessage(null)
+
+    startTransition(async () => {
+      const result = await cancelSubscriptionAction()
+
+      if (!result.success) {
+        setServerError(result.error ?? "Unable to cancel subscription")
+        return
+      }
+
+      setSuccessMessage(result.message ?? "Subscription canceled")
+      router.refresh()
     })
   }
 
@@ -111,6 +138,20 @@ export function SubscriptionPlans({
           {latestPaymentStatus ? ` (${latestPaymentStatus})` : ""}
         </p>
       </div>
+
+      {currentStatus !== "active" ? (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          Subscriber-only features (score entry and winner proof upload) remain locked until an active subscription is confirmed.
+        </p>
+      ) : null}
+
+      {paymentFeedback ? <p className="text-sm text-emerald-700">{paymentFeedback}</p> : null}
+
+      {currentStatus === "active" ? (
+        <Button type="button" variant="outline" disabled={isPending} onClick={handleCancelSubscription}>
+          Cancel subscription
+        </Button>
+      ) : null}
 
       {serverError ? <p className="text-sm text-rose-600">{serverError}</p> : null}
       {successMessage ? <p className="text-sm text-emerald-700">{successMessage}</p> : null}
